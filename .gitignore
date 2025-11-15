@@ -1,0 +1,13 @@
+# Terraform cache & state
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+terraform.tfvars
+terraform.tfstate.d/
+
+# Optional: lock file (you can track it if you want, but ignore is ok)
+.terraform.lock.hcl
+
+# OS / IDE stuff
+.vscode/
+*.log
