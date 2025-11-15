@@ -1,34 +1,54 @@
 pipeline {
     agent any
+
     environment {
-        TF_WORKSPACE = "dev"
+        AWS_REGION   = 'ap-south-1'
+        TF_WORKSPACE = 'dev'
     }
+
     stages {
-        stage('Checkout') {
+
+        stage('Terraform Init') {
             steps {
-                git 'https://github.com/anantpatil146/terraform-vpc-project.git'
+                // Use AWS credentials stored in Jenkins (ID: aws-access)
+                withAWS(credentials: 'aws-access', region: env.AWS_REGION) {
+                    bat 'terraform init'
+                }
             }
         }
-        stage('Init') {
+
+        stage('Select/Create Workspace') {
             steps {
-                sh 'terraform init'
+                withAWS(credentials: 'aws-access', region: env.AWS_REGION) {
+                    bat "terraform workspace select %TF_WORKSPACE% || terraform workspace new %TF_WORKSPACE%"
+                }
             }
         }
-        stage('Select Workspace') {
+
+        stage('Terraform Plan') {
             steps {
-                sh "terraform workspace select ${TF_WORKSPACE} || terraform workspace new ${TF_WORKSPACE}"
+                withAWS(credentials: 'aws-access', region: env.AWS_REGION) {
+                    bat 'terraform plan -out=tfplan'
+                }
             }
         }
-        stage('Plan') {
+
+        stage('Terraform Apply') {
             steps {
-                sh 'terraform plan -out=tfplan'
+                input message: 'Approve to apply infrastructure changes?'
+                withAWS(credentials: 'aws-access', region: env.AWS_REGION) {
+                    bat 'terraform apply -auto-approve tfplan'
+                }
             }
         }
-        stage('Apply') {
-            steps {
-                input 'Apply infrastructure changes?'
-                sh 'terraform apply -auto-approve tfplan'
-            }
+    }
+
+    post {
+        success {
+            echo '✅ Infrastructure successfully provisioned via Terraform.'
+        }
+        failure {
+            echo '❌ Pipeline failed. Check console output.'
         }
     }
 }
