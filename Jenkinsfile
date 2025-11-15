@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION   = 'ap-south-1'
-        TF_WORKSPACE = 'dev'
+        AWS_REGION = 'ap-south-1'
+        // ❌ Removed TF_WORKSPACE here to avoid conflict
     }
 
     stages {
@@ -12,7 +12,7 @@ pipeline {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-access'   // 🔹 ID of your AWS creds in Jenkins
+                    credentialsId: 'aws-access'   // <- your Jenkins AWS credential ID
                 ]]) {
                     bat 'terraform init'
                 }
@@ -25,7 +25,8 @@ pipeline {
                     $class: 'AmazonWebServicesCredentialsBinding',
                     credentialsId: 'aws-access'
                 ]]) {
-                    bat "terraform workspace select %TF_WORKSPACE% || terraform workspace new %TF_WORKSPACE%"
+                    // ✅ Now we explicitly work with "dev" workspace via CLI
+                    bat 'terraform workspace select dev || terraform workspace new dev'
                 }
             }
         }
