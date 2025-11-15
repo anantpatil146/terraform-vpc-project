@@ -10,8 +10,10 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                // Use AWS credentials stored in Jenkins (ID: aws-access)
-                withAWS(credentials: 'aws-access', region: env.AWS_REGION) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-access'   // 🔹 ID of your AWS creds in Jenkins
+                ]]) {
                     bat 'terraform init'
                 }
             }
@@ -19,7 +21,10 @@ pipeline {
 
         stage('Select/Create Workspace') {
             steps {
-                withAWS(credentials: 'aws-access', region: env.AWS_REGION) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-access'
+                ]]) {
                     bat "terraform workspace select %TF_WORKSPACE% || terraform workspace new %TF_WORKSPACE%"
                 }
             }
@@ -27,7 +32,10 @@ pipeline {
 
         stage('Terraform Plan') {
             steps {
-                withAWS(credentials: 'aws-access', region: env.AWS_REGION) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-access'
+                ]]) {
                     bat 'terraform plan -out=tfplan'
                 }
             }
@@ -36,7 +44,10 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 input message: 'Approve to apply infrastructure changes?'
-                withAWS(credentials: 'aws-access', region: env.AWS_REGION) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-access'
+                ]]) {
                     bat 'terraform apply -auto-approve tfplan'
                 }
             }
